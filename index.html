@@ -88,7 +88,6 @@
         .image-wrapper img {
             max-height: 100%;
             max-width: 100%;
-            cursor: move;
             user-select: none;
             border: 1px solid #ddd;
             object-fit: contain;
@@ -403,18 +402,11 @@
         const phoneNumber = document.getElementById('phoneNumber');
         
         // Variables
-        const CORRECT_PASSWORD = "minhtriet1973";
+        const CORRECT_PASSWORD = "minhtriet";
+        const ADD_IMAGE_PASSWORD = "minhtriet";
         let selectedFrame = null;
         let currentRows = 1;
         const framesPerRow = 3;
-        let isDragging = false;
-        let dragStartX = 0;
-        let dragStartY = 0;
-        let initialX = 0;
-        let initialY = 0;
-        let currentDraggingImg = null;
-        let currentDraggingFrameId = null;
-        let currentDraggingImgIndex = null;
         let pendingAction = null;
         let pendingFrameId = null;
         let pendingImgIndex = null;
@@ -428,7 +420,7 @@
             addNewRow();
             
             // Set up event listeners
-            addImageBtn.addEventListener('click', addImage);
+            addImageBtn.addEventListener('click', () => showPasswordModal('addImage'));
             addRowBtn.addEventListener('click', addNewRow);
             removeRowBtn.addEventListener('click', () => showPasswordModal('removeRow'));
             confirmPassword.addEventListener('click', checkPassword);
@@ -471,7 +463,14 @@
         }
         
         function checkPassword() {
-            if (passwordInput.value === CORRECT_PASSWORD) {
+            let correctPassword = CORRECT_PASSWORD;
+            
+            // Sử dụng mật khẩu khác cho hành động thêm ảnh
+            if (pendingAction === 'addImage') {
+                correctPassword = ADD_IMAGE_PASSWORD;
+            }
+            
+            if (passwordInput.value === correctPassword) {
                 executePendingAction();
                 hidePasswordModal();
             } else {
@@ -492,6 +491,9 @@
                     break;
                 case 'removeRow':
                     removeLastRow();
+                    break;
+                case 'addImage':
+                    addImage();
                     break;
             }
             
@@ -523,7 +525,7 @@
                                 imagesContainer.innerHTML = '';
                                 
                                 frameData.images.forEach((imgData, index) => {
-                                    const imgWrapper = createImageWrapper(imgData.url, imgData.x, imgData.y, frameId, index);
+                                    const imgWrapper = createImageWrapper(imgData.url, frameId, index);
                                     imagesContainer.appendChild(imgWrapper);
                                     
                                     // Adjust image size after loading
@@ -652,13 +654,12 @@
         }
         
         // Create image wrapper element
-        function createImageWrapper(src, x = 0, y = 0, frameId, imgIndex) {
+        function createImageWrapper(src, frameId, imgIndex) {
             const wrapper = document.createElement('div');
             wrapper.className = 'image-wrapper';
             
             const img = document.createElement('img');
             img.src = src;
-            img.style.transform = `translate(${x}px, ${y}px)`;
             
             const removeBtn = document.createElement('button');
             removeBtn.className = 'remove-image';
@@ -667,10 +668,6 @@
                 e.stopPropagation();
                 showPasswordModal('removeImage', frameId, imgIndex);
             });
-            
-            // Drag events
-            img.addEventListener('mousedown', (e) => startDrag(e, img, frameId, imgIndex));
-            img.addEventListener('touchstart', (e) => startDragTouch(e, img, frameId, imgIndex));
             
             wrapper.appendChild(img);
             wrapper.appendChild(removeBtn);
@@ -731,98 +728,6 @@
         // Update rows count in Firebase
         function updateRowsInFirebase() {
             database.ref('gallery/rows').set(currentRows);
-        }
-        
-        // Drag functions
-        function startDrag(e, img, frameId, imgIndex) {
-            isDragging = true;
-            dragStartX = e.clientX;
-            dragStartY = e.clientY;
-            
-            // Get current position from transform
-            const transform = img.style.transform;
-            const match = transform.match(/translate\(([-\d.]+)px,\s*([-\d.]+)px\)/);
-            initialX = match ? parseFloat(match[1]) : 0;
-            initialY = match ? parseFloat(match[2]) : 0;
-            
-            currentDraggingImg = img;
-            currentDraggingFrameId = frameId;
-            currentDraggingImgIndex = imgIndex;
-            
-            document.addEventListener('mousemove', drag);
-            document.addEventListener('mouseup', endDrag);
-            e.preventDefault();
-        }
-        
-        function startDragTouch(e, img, frameId, imgIndex) {
-            if (e.touches.length === 1) {
-                const touch = e.touches[0];
-                isDragging = true;
-                dragStartX = touch.clientX;
-                dragStartY = touch.clientY;
-                
-                const transform = img.style.transform;
-                const match = transform.match(/translate\(([-\d.]+)px,\s*([-\d.]+)px\)/);
-                initialX = match ? parseFloat(match[1]) : 0;
-                initialY = match ? parseFloat(match[2]) : 0;
-                
-                currentDraggingImg = img;
-                currentDraggingFrameId = frameId;
-                currentDraggingImgIndex = imgIndex;
-                
-                document.addEventListener('touchmove', dragTouch, { passive: false });
-                document.addEventListener('touchend', endDrag);
-                e.preventDefault();
-            }
-        }
-        
-        function drag(e) {
-            if (isDragging && currentDraggingImg) {
-                const dx = e.clientX - dragStartX;
-                const dy = e.clientY - dragStartY;
-                
-                currentDraggingImg.style.transform = `translate(${initialX + dx}px, ${initialY + dy}px)`;
-                e.preventDefault();
-            }
-        }
-        
-        function dragTouch(e) {
-            if (isDragging && currentDraggingImg && e.touches.length === 1) {
-                const touch = e.touches[0];
-                const dx = touch.clientX - dragStartX;
-                const dy = touch.clientY - dragStartY;
-                
-                currentDraggingImg.style.transform = `translate(${initialX + dx}px, ${initialY + dy}px)`;
-                e.preventDefault();
-            }
-        }
-        
-        function endDrag() {
-            if (isDragging && currentDraggingImg && currentDraggingFrameId !== null && currentDraggingImgIndex !== null) {
-                // Get final position
-                const transform = currentDraggingImg.style.transform;
-                const match = transform.match(/translate\(([-\d.]+)px,\s*([-\d.]+)px\)/);
-                const x = match ? parseFloat(match[1]) : 0;
-                const y = match ? parseFloat(match[2]) : 0;
-                
-                // Update in Firebase
-                const frameRef = database.ref(`gallery/frames/${currentDraggingFrameId}/images/${currentDraggingImgIndex}`);
-                frameRef.update({
-                    x: x,
-                    y: y
-                });
-                
-                // Clean up
-                isDragging = false;
-                currentDraggingImg = null;
-                currentDraggingFrameId = null;
-                currentDraggingImgIndex = null;
-                
-                document.removeEventListener('mousemove', drag);
-                document.removeEventListener('mouseup', endDrag);
-                document.removeEventListener('touchmove', dragTouch);
-                document.removeEventListener('touchend', endDrag);
-            }
         }
         
         // Initialize the app
