@@ -239,7 +239,71 @@
             color: white;
         }
         
-        /* Mobile view */
+        .contact-icon {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            background-color: #ff0000;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3), 
+                        inset 0 0 0 2px white;
+            z-index: 999;
+            transition: transform 0.2s;
+        }
+
+        .contact-icon:hover {
+            transform: scale(1.1);
+        }
+
+        .contact-popup {
+            display: none;
+            position: fixed;
+            bottom: 90px;
+            right: 20px;
+            width: 250px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.2);
+            padding: 15px;
+            z-index: 1000;
+        }
+
+        .contact-popup h3 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .contact-popup p {
+            margin: 8px 0;
+            color: #555;
+        }
+
+        .contact-popup .phone {
+            color: #0066cc;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+
+        .close-popup {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: none;
+            border: none;
+            font-size: 16px;
+            cursor: pointer;
+            color: #777;
+        }
+
         @media (max-width: 768px) {
             .frame-row {
                 flex-direction: column;
@@ -258,70 +322,6 @@
                 min-height: 200px;
             }
         }
-		.contact-icon {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    width: 60px;
-    height: 60px;
-    background-color: #ff0000;
-    color: white;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 12px;
-    font-weight: bold;
-    cursor: pointer;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.3), 
-                inset 0 0 0 2px white;
-    z-index: 999;
-    transition: transform 0.2s;
-}
-
-.contact-icon:hover {
-    transform: scale(1.1);
-}
-
-.contact-popup {
-    display: none;
-    position: fixed;
-    bottom: 90px;
-    right: 20px;
-    width: 250px;
-    background-color: white;
-    border-radius: 8px;
-    box-shadow: 0 2px 15px rgba(0,0,0,0.2);
-    padding: 15px;
-    z-index: 1000;
-}
-
-.contact-popup h3 {
-    margin-bottom: 10px;
-    color: #333;
-}
-
-.contact-popup p {
-    margin: 8px 0;
-    color: #555;
-}
-
-.contact-popup .phone {
-    color: #0066cc;
-    text-decoration: underline;
-    cursor: pointer;
-}
-
-.close-popup {
-    position: absolute;
-    top: 5px;
-    right: 5px;
-    background: none;
-    border: none;
-    font-size: 16px;
-    cursor: pointer;
-    color: #777;
-}
     </style>
 </head>
 <body>
@@ -360,16 +360,17 @@
             </div>
         </div>
     </div>
+    
     <div class="contact-icon" id="contactIcon">Liên hệ</div>
     
-<div class="contact-popup" id="contactPopup">
-    <button class="close-popup" id="closePopup">&times;</button>
-    <h3>Thông tin liên hệ</h3>
-    <p><strong>Công ty:</strong>Công ty IDECO - Số 003 Carlion 5 -262/3 Lũy Bán Bính- P.Tân Phú- Tp.HCM</p>
-    <p><strong>Người liên hệ:</strong> MS Nguyễn Hương</p>
-    <p><strong>Điện thoại:</strong> <span class="phone" id="phoneNumber">0385600436</span></p>
-	
-</div>
+    <div class="contact-popup" id="contactPopup">
+        <button class="close-popup" id="closePopup">&times;</button>
+        <h3>Thông tin liên hệ</h3>
+        <p><strong>Công ty:</strong> Công ty IDECO - Số 003 Carlion 5 -262/3 Lũy Bán Bính- P.Tân Phú- Tp.HCM</p>
+        <p><strong>Người liên hệ:</strong> MS Nguyễn Hương</p>
+        <p><strong>Điện thoại:</strong> <span class="phone" id="phoneNumber">0385600436</span></p>
+    </div>
+    
     <script>
         // Initialize Firebase
         const firebaseConfig = {
@@ -396,6 +397,10 @@
         const passwordInput = document.getElementById('passwordInput');
         const confirmPassword = document.getElementById('confirmPassword');
         const cancelPassword = document.getElementById('cancelPassword');
+        const contactIcon = document.getElementById('contactIcon');
+        const contactPopup = document.getElementById('contactPopup');
+        const closePopup = document.getElementById('closePopup');
+        const phoneNumber = document.getElementById('phoneNumber');
         
         // Variables
         const CORRECT_PASSWORD = "minhtriet1973";
@@ -428,6 +433,27 @@
             removeRowBtn.addEventListener('click', () => showPasswordModal('removeRow'));
             confirmPassword.addEventListener('click', checkPassword);
             cancelPassword.addEventListener('click', hidePasswordModal);
+            
+            // Contact event listeners
+            contactIcon.addEventListener('click', () => {
+                contactPopup.style.display = 'block';
+            });
+            
+            closePopup.addEventListener('click', () => {
+                contactPopup.style.display = 'none';
+            });
+            
+            phoneNumber.addEventListener('click', () => {
+                const phone = phoneNumber.textContent.replace(/\s/g, '');
+                window.location.href = `tel:${phone}`;
+            });
+            
+            // Close popup when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!contactPopup.contains(e.target) && e.target !== contactIcon) {
+                    contactPopup.style.display = 'none';
+                }
+            });
         }
         
         // Password functions
@@ -437,33 +463,42 @@
             pendingImgIndex = imgIndex;
             passwordModal.style.display = 'flex';
             passwordInput.value = '';
+            passwordInput.focus();
         }
         
         function hidePasswordModal() {
             passwordModal.style.display = 'none';
-            pendingAction = null;
-            pendingFrameId = null;
-            pendingImgIndex = null;
         }
         
         function checkPassword() {
             if (passwordInput.value === CORRECT_PASSWORD) {
-                hidePasswordModal();
                 executePendingAction();
+                hidePasswordModal();
             } else {
                 alert("Mật khẩu không đúng!");
+                passwordInput.value = '';
+                passwordInput.focus();
             }
         }
         
         function executePendingAction() {
+            if (!pendingAction) return;
+
             switch(pendingAction) {
                 case 'removeImage':
-                    removeImage(pendingFrameId, pendingImgIndex);
+                    if (pendingFrameId && pendingImgIndex !== null) {
+                        removeImage(pendingFrameId, pendingImgIndex);
+                    }
                     break;
                 case 'removeRow':
                     removeLastRow();
                     break;
             }
+            
+            // Reset pending action
+            pendingAction = null;
+            pendingFrameId = null;
+            pendingImgIndex = null;
         }
         
         // Load data from Firebase
@@ -649,8 +684,13 @@
                 const images = snapshot.val() || [];
                 if (imgIndex >= 0 && imgIndex < images.length) {
                     images.splice(imgIndex, 1);
-                    frameRef.set(images);
+                    return frameRef.set(images);
                 }
+                return Promise.reject("Invalid image index");
+            }).then(() => {
+                console.log('Image removed successfully');
+            }).catch(error => {
+                console.error('Error removing image:', error);
             });
         }
         
@@ -662,23 +702,30 @@
         
         // Remove last row of frames
         function removeLastRow() {
-            if (currentRows > 1) {
-                currentRows--;
-                updateRowsInFirebase();
-                
-                // Also remove images from deleted frames
-                const framesToRemove = [];
-                for (let i = currentRows * framesPerRow + 1; i <= (currentRows + 1) * framesPerRow; i++) {
-                    framesToRemove.push(`frame${i}`);
-                }
-                
-                const updates = {};
-                framesToRemove.forEach(frameId => {
-                    updates[`gallery/frames/${frameId}`] = null;
-                });
-                
-                database.ref().update(updates);
+            if (currentRows <= 1) {
+                alert("Không thể xóa hàng cuối cùng!");
+                return;
             }
+
+            const firstFrameInLastRow = (currentRows - 1) * framesPerRow + 1;
+            const lastFrameInLastRow = currentRows * framesPerRow;
+            
+            const updates = {};
+            for (let i = firstFrameInLastRow; i <= lastFrameInLastRow; i++) {
+                updates[`gallery/frames/frame${i}`] = null;
+            }
+            
+            // Giảm số hàng trước khi cập nhật Firebase
+            currentRows--;
+            updates['gallery/rows'] = currentRows;
+            
+            database.ref().update(updates).then(() => {
+                console.log('Row removed successfully');
+            }).catch(error => {
+                console.error('Error removing row:', error);
+                // Khôi phục số hàng nếu có lỗi
+                currentRows++;
+            });
         }
         
         // Update rows count in Firebase
@@ -777,32 +824,7 @@
                 document.removeEventListener('touchend', endDrag);
             }
         }
-        // Contact elements
-const contactIcon = document.getElementById('contactIcon');
-const contactPopup = document.getElementById('contactPopup');
-const closePopup = document.getElementById('closePopup');
-const phoneNumber = document.getElementById('phoneNumber');
-
-// Contact functions
-contactIcon.addEventListener('click', () => {
-    contactPopup.style.display = 'block';
-});
-
-closePopup.addEventListener('click', () => {
-    contactPopup.style.display = 'none';
-});
-
-phoneNumber.addEventListener('click', () => {
-    const phone = phoneNumber.textContent.replace(/\s/g, '');
-    window.location.href = `tel:${phone}`;
-});
-
-// Close popup when clicking outside
-document.addEventListener('click', (e) => {
-    if (!contactPopup.contains(e.target) && e.target !== contactIcon) {
-        contactPopup.style.display = 'none';
-    }
-});
+        
         // Initialize the app
         init();
     </script>
