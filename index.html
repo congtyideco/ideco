@@ -74,6 +74,7 @@
             flex: 1;
             display: flex;
             align-items: center;
+            min-height: 200px;
         }
         
         .image-wrapper {
@@ -413,12 +414,6 @@
         
         // Initialize app
         function init() {
-            // Load initial data from Firebase
-            loadFromFirebase();
-            
-            // Create initial row
-            addNewRow();
-            
             // Set up event listeners
             addImageBtn.addEventListener('click', () => showPasswordModal('addImage'));
             addRowBtn.addEventListener('click', addNewRow);
@@ -446,6 +441,9 @@
                     contactPopup.style.display = 'none';
                 }
             });
+            
+            // Load data from Firebase first, then build UI
+            loadFromFirebase();
         }
         
         // Password functions
@@ -505,13 +503,13 @@
         
         // Load data from Firebase
         function loadFromFirebase() {
-            database.ref('gallery').on('value', (snapshot) => {
+            database.ref('gallery').once('value').then((snapshot) => {
                 const data = snapshot.val();
                 if (data) {
                     // Update rows count
                     currentRows = data.rows || 1;
                     
-                    // Rebuild the gallery
+                    // Rebuild the gallery with the correct number of rows
                     rebuildGallery();
                     
                     // Load images for each frame
@@ -537,7 +535,16 @@
                             }
                         }
                     }
+                } else {
+                    // Nếu không có dữ liệu, tạo 1 hàng mặc định
+                    currentRows = 1;
+                    rebuildGallery();
                 }
+            }).catch(error => {
+                console.error("Error loading data:", error);
+                // Fallback: create 1 row by default
+                currentRows = 1;
+                rebuildGallery();
             });
         }
         
@@ -614,6 +621,9 @@
             if (currentRows > 0) {
                 selectFrame('frame1');
             }
+            
+            // Scroll to bottom to show all rows
+            setTimeout(scrollToBottom, 100);
         }
         
         // Select a frame
@@ -647,9 +657,12 @@
                 });
                 
                 // Update in Firebase
-                frameRef.set(images).then(() => {
-                    imageUrlInput.value = '';
-                });
+                return frameRef.set(images);
+            }).then(() => {
+                imageUrlInput.value = '';
+            }).catch(error => {
+                console.error("Error adding image:", error);
+                alert("Có lỗi khi thêm ảnh. Vui lòng thử lại.");
             });
         }
         
@@ -688,13 +701,21 @@
                 console.log('Image removed successfully');
             }).catch(error => {
                 console.error('Error removing image:', error);
+                alert("Có lỗi khi xóa ảnh. Vui lòng thử lại.");
             });
         }
         
         // Add new row of frames
         function addNewRow() {
             currentRows++;
-            updateRowsInFirebase();
+            updateRowsInFirebase().then(() => {
+                rebuildGallery();
+                scrollToBottom();
+            }).catch(error => {
+                console.error("Error adding row:", error);
+                currentRows--; // Rollback on error
+                alert("Có lỗi khi thêm hàng. Vui lòng thử lại.");
+            });
         }
         
         // Remove last row of frames
@@ -718,20 +739,30 @@
             
             database.ref().update(updates).then(() => {
                 console.log('Row removed successfully');
+                rebuildGallery();
             }).catch(error => {
                 console.error('Error removing row:', error);
                 // Khôi phục số hàng nếu có lỗi
                 currentRows++;
+                alert("Có lỗi khi xóa hàng. Vui lòng thử lại.");
             });
         }
         
         // Update rows count in Firebase
         function updateRowsInFirebase() {
-            database.ref('gallery/rows').set(currentRows);
+            return database.ref('gallery/rows').set(currentRows);
         }
         
-        // Initialize the app
-        init();
+        // Scroll to bottom of the page
+        function scrollToBottom() {
+            window.scrollTo({
+                top: document.body.scrollHeight,
+                behavior: 'smooth'
+            });
+        }
+        
+        // Initialize the app when DOM is loaded
+        document.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
 </html>
